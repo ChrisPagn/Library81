@@ -1,0 +1,166 @@
+﻿@* Library81.Client/Pages/Books/BookForm.razor *@
+@page "/books/new"
+@page "/books/edit/{Id:int}"
+@using Library81.Client.Services
+@using Library81.Shared.DTOs
+@inject IApiService ApiService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@rendermode InteractiveAuto
+
+<PageTitle>@(Id == null ? "Nouveau Livre" : "Modifier Livre")</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@(Id == null ? "Nouveau Livre" : "Modifier Livre")</MudText>
+
+<MudCard>
+    <MudCardContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="book.Title" 
+                                 Label="Titre" 
+                                 Required="true" 
+                                 RequiredError="Le titre est requis" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="book.Creator" Label="Auteur" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="book.Publisher" Label="Éditeur" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudNumericField @bind-Value="book.Year" Label="Année" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="book.Isbn" Label="ISBN" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect @bind-Value="book.GenreId" 
+                              Label="Genre" 
+                              AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem Value="@((int?)null)">-- Sélectionner --</MudSelectItem>
+                        @foreach (var genre in genres)
+                        {
+                            <MudSelectItem Value="@((int?)genre.GenreId)">@genre.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect @bind-Value="book.SubcategoryId" 
+                              Label="Sous-catégorie" 
+                              AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem Value="@((int?)null)">-- Sélectionner --</MudSelectItem>
+                        @foreach (var subcategory in subcategories)
+                        {
+                            <MudSelectItem Value="@((int?)subcategory.SubcategoryId)">
+                                @subcategory.Name @(subcategory.CategoryName != null ? $" ({subcategory.CategoryName})" : "")
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="book.ImageUrl" Label="URL de l'image" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="book.Description" 
+                                 Label="Description" 
+                                 Lines="4" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled" 
+                  Color="Color.Primary" 
+                  OnClick="Submit" 
+                  Disabled="@(!success)">
+            @(Id == null ? "Créer" : "Enregistrer")
+        </MudButton>
+    </MudCardActions>
+</MudCard>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private MudForm form = default!;
+    private BookDto book = new();
+    private List<GenreDto> genres = new();
+    private List<SubcategoryDto> subcategories = new();
+    private bool success;
+    private string[] errors = { };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReferenceData();
+
+        if (Id.HasValue)
+        {
+            await LoadBook();
+        }
+    }
+
+    private async Task LoadReferenceData()
+    {
+        var genresResponse = await ApiService.GetAsync<List<GenreDto>>("genres");
+        if (genresResponse.Success && genresResponse.Data != null)
+        {
+            genres = genresResponse.Data;
+        }
+
+        var subcategoriesResponse = await ApiService.GetAsync<List<SubcategoryDto>>("subcategories");
+        if (subcategoriesResponse.Success && subcategoriesResponse.Data != null)
+        {
+            subcategories = subcategoriesResponse.Data;
+        }
+    }
+
+    private async Task LoadBook()
+    {
+        var response = await ApiService.GetAsync<BookDto>($"books/{Id}");
+        if (response.Success && response.Data != null)
+        {
+            book = response.Data;
+        }
+        else
+        {
+            Snackbar.Add(response.Message ?? "Livre non trouvé", Severity.Error);
+            Navigation.NavigateTo("/books");
+        }
+    }
+
+    private async Task Submit()
+    {
+        await form.Validate();
+
+        if (form.IsValid)
+        {
+            ApiResponse<BookDto> response;
+
+            if (Id == null)
+            {
+                response = await ApiService.PostAsync<BookDto>("books", book);
+            }
+            else
+            {
+                response = await ApiService.PutAsync<BookDto>($"books/{Id}", book);
+            }
+
+            if (response.Success)
+            {
+                Snackbar.Add(response.Message ?? "Opération réussie", Severity.Success);
+                Navigation.NavigateTo("/books");
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors de l'enregistrement", Severity.Error);
+            }
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/books");
+    }
+}

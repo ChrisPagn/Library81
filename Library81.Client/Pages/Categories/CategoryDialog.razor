@@ -1,0 +1,48 @@
+﻿@* Library81.Client/Components/CategoryDialog.razor *@
+@using Library81.Shared.DTOs
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="localCategory.Name" Label="Nom" Required="true" 
+                     RequiredError="Le nom est requis" Class="mb-4" />
+        <MudTextField @bind-Value="localCategory.Description" Label="Description" Lines="3" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">
+            @(Category == null ? "Créer" : "Enregistrer")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public CategoryDto? Category { get; set; }
+
+    private CategoryDto localCategory = new();
+
+    protected override void OnInitialized()
+    {
+        if (Category != null)
+        {
+            localCategory = new CategoryDto
+            {
+                CategoryId = Category.CategoryId,
+                Name = Category.Name,
+                Description = Category.Description
+            };
+        }
+    }
+
+    void Submit()
+    {
+        if (!string.IsNullOrWhiteSpace(localCategory.Name))
+        {
+            MudDialog.Close(DialogResult.Ok(localCategory));
+        }
+    }
+
+    void Cancel() => MudDialog.Cancel();
+}

@@ -1,0 +1,160 @@
+﻿@* Library81.Client/Pages/Books/BookList.razor *@
+@page "/books"
+@using Library81.Client.Services
+@using Library81.Shared.DTOs
+@using Library81.Shared.ViewModels
+@inject IApiService ApiService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+@rendermode InteractiveAuto
+
+<PageTitle>Gestion des Livres</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Gestion des Livres</MudText>
+
+<MudCard>
+    <MudCardContent>
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="8">
+                <MudTextField @bind-Value="searchString" 
+                             Placeholder="Rechercher..." 
+                             Adornment="Adornment.Start" 
+                             AdornmentIcon="@Icons.Material.Filled.Search" 
+                             IconSize="Size.Medium" 
+                             Class="mt-0"
+                             DebounceInterval="500" 
+                             OnDebounceIntervalElapsed="@(() => LoadBooks())" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4" Class="d-flex justify-end">
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Primary" 
+                           StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="@(() => Navigation.NavigateTo("/books/new"))">
+                    Nouveau Livre
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudCardContent>
+</MudCard>
+
+<MudCard Class="mt-4">
+    <MudCardContent Class="pa-0">
+        <MudDataGrid T="BookDto" 
+                    Items="@books" 
+                    Loading="@loading" 
+                    Hover="true" 
+                    SortMode="SortMode.Multiple" 
+                    Filterable="true" 
+                    QuickFilter="@_quickFilter" 
+                    Virtualize="true" 
+                    FixedHeader="true" 
+                    Height="600px">
+            <Columns>
+                <PropertyColumn Property="x => x.Title" Title="Titre" />
+                <PropertyColumn Property="x => x.Creator" Title="Auteur" />
+                <PropertyColumn Property="x => x.Publisher" Title="Éditeur" />
+                <PropertyColumn Property="x => x.Year" Title="Année" />
+                <PropertyColumn Property="x => x.Isbn" Title="ISBN" />
+                <PropertyColumn Property="x => x.GenreName" Title="Genre" />
+                <PropertyColumn Property="x => x.SubcategoryName" Title="Sous-catégorie" />
+                <TemplateColumn Title="Actions" Sortable="false">
+                    <CellTemplate>
+                        <MudStack Row="true">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                         Color="Color.Primary" 
+                                         Size="Size.Small"
+                                         OnClick="@(() => EditBook(context.Item))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                         Color="Color.Error" 
+                                         Size="Size.Small"
+                                         OnClick="@(() => DeleteBook(context.Item))" />
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="BookDto" />
+            </PagerContent>
+        </MudDataGrid>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private List<BookDto> books = new();
+    private bool loading = true;
+    private string searchString = "";
+
+    private Func<BookDto, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        if (x.Title?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+
+        if (x.Creator?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+
+        if (x.Isbn?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+
+        return false;
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBooks();
+    }
+
+    private async Task LoadBooks()
+    {
+        loading = true;
+        var response = await ApiService.GetAsync<List<BookDto>>("books");
+        
+        if (response.Success && response.Data != null)
+        {
+            books = response.Data;
+        }
+        else
+        {
+            Snackbar.Add(response.Message ?? "Erreur lors du chargement des livres", Severity.Error);
+        }
+        
+        loading = false;
+        StateHasChanged();
+    }
+
+    private void EditBook(BookDto book)
+    {
+        Navigation.NavigateTo($"/books/edit/{book.BookId}");
+    }
+
+    private async Task DeleteBook(BookDto book)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, $"Êtes-vous sûr de vouloir supprimer le livre '{book.Title}' ?" },
+            { x => x.ButtonText, "Supprimer" },
+            { x => x.Color, Color.Error }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirmer la suppression", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var response = await ApiService.DeleteAsync<bool>($"books/{book.BookId}");
+            
+            if (response.Success)
+            {
+                Snackbar.Add("Livre supprimé avec succès", Severity.Success);
+                await LoadBooks();
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors de la suppression", Severity.Error);
+            }
+        }
+    }
+}

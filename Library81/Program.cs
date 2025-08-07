@@ -1,5 +1,8 @@
 using Library81.Client.Pages;
 using Library81.Components;
+using Library81.Models;
+using Library81.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +10,30 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
+
+// Add Entity Framework
+builder.Services.AddDbContext<LibraryContext>(options =>
+    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection") ??
+        "server=localhost;port=33020;database=library;user=root;password=password;treattinyasboolean=false",
+        ServerVersion.Parse("8.0.32-mysql")));
+
+// Add Services
+builder.Services.AddScoped<IBookService, BookService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IGameService, GameService>();
+// Add Controllers for API
+builder.Services.AddControllers();
+
+// Add CORS for Blazor WebAssembly
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("BlazorPolicy", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
 
@@ -23,9 +50,13 @@ else
 }
 
 app.UseHttpsRedirection();
+app.UseCors("BlazorPolicy");
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+
+// Map API Controllers
+app.MapControllers();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()

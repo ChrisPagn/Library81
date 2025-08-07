@@ -1,0 +1,171 @@
+﻿@* Library81.Client/Pages/Categories/CategoryList.razor *@
+@page "/categories"
+@using Library81.Client.Services
+@using Library81.Shared.DTOs
+@inject IApiService ApiService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@rendermode InteractiveAuto
+
+<PageTitle>Gestion des Catégories</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Gestion des Catégories</MudText>
+
+<MudCard>
+    <MudCardContent>
+        <MudGrid>
+            <MudItem xs="12" Class="d-flex justify-end">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                          OnClick="OpenCreateDialog">
+                    Nouvelle Catégorie
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudCardContent>
+</MudCard>
+
+<MudGrid Class="mt-4">
+    @if (loading)
+    {
+        <MudItem xs="12" Class="d-flex justify-center">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </MudItem>
+    }
+    else
+    {
+        @foreach (var category in categories)
+        {
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">@category.Name</MudText>
+                        <MudText Typo="Typo.body2" Class="mb-2">@category.Description</MudText>
+                        
+                        @if (category.Subcategories.Any())
+                        {
+                            <MudText Typo="Typo.subtitle2" Class="mt-2">Sous-catégories :</MudText>
+                            <MudChipSet Class="mt-1">
+                                @foreach (var sub in category.Subcategories)
+                                {
+                                    <MudChip Size="Size.Small" Color="Color.Primary" Variant="Variant.Text">
+                                        @sub.Name
+                                    </MudChip>
+                                }
+                            </MudChipSet>
+                        }
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" 
+                                     OnClick="@(() => OpenEditDialog(category))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                     OnClick="@(() => DeleteCategory(category))" />
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    }
+</MudGrid>
+
+@code {
+    private List<CategoryDto> categories = new();
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        loading = true;
+        var response = await ApiService.GetAsync<List<CategoryDto>>("categories");
+        
+        if (response.Success && response.Data != null)
+        {
+            categories = response.Data;
+        }
+        else
+        {
+            Snackbar.Add(response.Message ?? "Erreur lors du chargement", Severity.Error);
+        }
+        
+        loading = false;
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<CategoryDialog>();
+        var dialog = await DialogService.ShowAsync<CategoryDialog>("Nouvelle Catégorie", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is CategoryDto newCategory)
+        {
+            var response = await ApiService.PostAsync<CategoryDto>("categories", newCategory);
+            
+            if (response.Success)
+            {
+                Snackbar.Add("Catégorie créée avec succès", Severity.Success);
+                await LoadCategories();
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors de la création", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditDialog(CategoryDto category)
+    {
+        var parameters = new DialogParameters<CategoryDialog>
+        {
+            { x => x.Category, category }
+        };
+        
+        var dialog = await DialogService.ShowAsync<CategoryDialog>("Modifier Catégorie", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is CategoryDto editedCategory)
+        {
+            var response = await ApiService.PutAsync<CategoryDto>($"categories/{category.CategoryId}", editedCategory);
+            
+            if (response.Success)
+            {
+                Snackbar.Add("Catégorie modifiée avec succès", Severity.Success);
+                await LoadCategories();
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors de la modification", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteCategory(CategoryDto category)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, $"Êtes-vous sûr de vouloir supprimer la catégorie '{category.Name}' ?" },
+            { x => x.ButtonText, "Supprimer" },
+            { x => x.Color, Color.Error }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirmer la suppression", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var response = await ApiService.DeleteAsync<bool>($"categories/{category.CategoryId}");
+            
+            if (response.Success)
+            {
+                Snackbar.Add("Catégorie supprimée avec succès", Severity.Success);
+                await LoadCategories();
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors de la suppression", Severity.Error);
+            }
+        }
+    }
+}
+

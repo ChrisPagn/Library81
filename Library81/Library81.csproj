@@ -8,7 +8,6 @@
 
 	<ItemGroup>
 	<ProjectReference Include="..\Library81.Client\Library81.Client.csproj" />
-	<ProjectReference Include="..\Library81.Shared\Library81.Shared.csproj" />
 	<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.19" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.8">
 		<PrivateAssets>all</PrivateAssets>

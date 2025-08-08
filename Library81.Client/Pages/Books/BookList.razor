@@ -1,5 +1,4 @@
-﻿@* Library81.Client/Pages/Books/BookList.razor *@
-@page "/books"
+﻿@page "/books"
 @using Library81.Client.Services
 @using Library81.Shared.DTOs
 @using Library81.Shared.ViewModels
@@ -7,7 +6,8 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject NavigationManager Navigation
-@rendermode InteractiveAuto
+
+@rendermode InteractiveWebAssembly
 
 <PageTitle>Gestion des Livres</PageTitle>
 
@@ -101,6 +101,13 @@
 
         return false;
     };
+
+    protected override void OnInitialized()
+    {
+        if (ApiService == null)
+            throw new Exception("ApiService n'a pas été injecté!");
+        base.OnInitialized();
+    }
 
     protected override async Task OnInitializedAsync()
     {

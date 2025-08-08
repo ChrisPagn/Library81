@@ -1,7 +1,51 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<MudContainer Class="home-background">
+    <MudPaper Class="overlay-content" Elevation="8">
+        <MudText Typo="Typo.h3" Color="Color.Primary">Hello, Library!</MudText>
+        <MudText Typo="Typo.body1">Welcome to your new gestion oh the Library.</MudText>
 
-<h1>Hello, world!</h1>
+        <MudSpacer />
 
-Welcome to your new app.
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@(() => OnMenuClick("Books"))">
+            Livre 1
+        </MudButton>
+
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="ms-2" OnClick="@(() => OnMenuClick("Games"))">
+            Livre 2
+        </MudButton>
+
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private void OnMenuClick(string livre)
+    {
+        Console.WriteLine($"Bouton {livre} cliqué !");
+        // Tu pourras mettre une navigation ou une action ici
+    }
+}
+
+
+<style>
+    .home-background {
+        background-image: url('/images/library-bg.jpg'); /* ton image */
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .overlay-content {
+        background-color: rgba(0, 0, 0, 0.3); /* léger voile */
+        padding: 2rem;
+        border-radius: 8px;
+        color: white;
+        text-align: center;
+    }
+
+</style>

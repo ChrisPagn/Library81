@@ -40,19 +40,25 @@
                     <MudCardContent>
                         <MudText Typo="Typo.h6">@category.Name</MudText>
                         <MudText Typo="Typo.body2" Class="mb-2">@category.Description</MudText>
-                        
+
                         @if (category.Subcategories.Any())
                         {
                             <MudText Typo="Typo.subtitle2" Class="mt-2">Sous-catégories :</MudText>
-                            <MudChipSet Class="mt-1">
+
+                            <MudChipSet T="string" ReadOnly="true">
                                 @foreach (var sub in category.Subcategories)
                                 {
-                                    <MudChip Size="Size.Small" Color="Color.Primary" Variant="Variant.Text">
+                                    <MudChip T="string"
+                                             Value="@sub.Name"
+                                             Size="Size.Small"
+                                             Color="Color.Primary"
+                                             Variant="Variant.Text">
                                         @sub.Name
                                     </MudChip>
                                 }
                             </MudChipSet>
                         }
+
                     </MudCardContent>
                     <MudCardActions>
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" 

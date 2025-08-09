@@ -1,0 +1,83 @@
+﻿@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<div class="book3d-wrapper">
+    <canvas id="@CanvasId"></canvas>
+</div>
+
+<div class="book3d-controls">
+    @if (UseMudBlazor)
+    {
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Open">Ouvrir</MudButton>
+        <MudButton Color="Color.Secondary" Variant="Variant.Outlined" OnClick="Prev">◀︎</MudButton>
+        <MudButton Color="Color.Secondary" Variant="Variant.Outlined" OnClick="Next">▶︎</MudButton>
+        <MudButton Color="Color.Error" Variant="Variant.Outlined" OnClick="Close">Fermer</MudButton>
+    }
+    else
+    {
+        <button @onclick="Open">Ouvrir</button>
+        <button @onclick="Prev">◀︎</button>
+        <button @onclick="Next">▶︎</button>
+        <button @onclick="Close">Fermer</button>
+    }
+</div>
+
+@code {
+    [Parameter] public string CanvasId { get; set; } = "book3d-canvas";
+    [Parameter] public bool AutoOpen { get; set; } = true;
+    [Parameter] public int PageCount { get; set; } = 24;
+    [Parameter] public bool UseMudBlazor { get; set; } = false;
+
+    IJSObjectReference? _bookApi;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var opts = new
+        {
+            pageCount = PageCount,
+            width = 0.21,
+            height = 0.297,
+            thickness = 0.03
+        };
+
+        _bookApi = await JS.InvokeAsync<IJSObjectReference>("Book3D.init", CanvasId, opts);
+        if (AutoOpen)
+        {
+            await _bookApi.InvokeVoidAsync("open");
+        }
+    }
+
+    async Task Open() { if (_bookApi != null) await _bookApi.InvokeVoidAsync("open"); }
+    async Task Close() { if (_bookApi != null) await _bookApi.InvokeVoidAsync("close"); }
+    async Task Next() { if (_bookApi != null) await _bookApi.InvokeVoidAsync("nextPage"); }
+    async Task Prev() { if (_bookApi != null) await _bookApi.InvokeVoidAsync("prevPage"); }
+}
+
+
+<style>
+    .book3d-wrapper {
+        width: min(900px, 90vw);
+        aspect-ratio: 16 / 10;
+        margin: 1rem auto;
+        background: radial-gradient(closest-side, rgba(0,0,0,0.08), rgba(0,0,0,0));
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+        #book3d-canvas, .book3d-wrapper canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+    .book3d-controls {
+        display: flex;
+        gap: .5rem;
+        justify-content: center;
+        margin-bottom: .5rem;
+    }
+
+    }
+</style>

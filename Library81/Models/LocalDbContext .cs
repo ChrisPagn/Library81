@@ -12,6 +12,11 @@ namespace Library81.Models
         public DbSet<LocalStorage> LocalStorages { get; set; }
         public DbSet<Setting> Settings { get; set; }
 
+        public LocalDbContext(DbContextOptions<LocalDbContext> options)
+       : base(options)
+        {
+        }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlite("Data Source=library_local.db");

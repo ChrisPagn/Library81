@@ -25,7 +25,12 @@
                     <tbody>
                         <tr>
                             <td>Livres locaux</td>
-                            <td><MudChip Size="Size.Small">@localStats.BooksCount</MudChip></td>
+                            <td>
+                                <MudChip T="string"
+                                         Text="@localStats.BooksCount.ToString()"
+                                         Size="Size.Small"
+                                         Color="Color.Info" />
+                            </td>
                         </tr>
                         <tr>
                             <td>Dernière sync</td>

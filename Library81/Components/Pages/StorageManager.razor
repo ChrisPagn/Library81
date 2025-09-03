@@ -1,0 +1,241 @@
+﻿@* Components/StorageManager.razor *@
+@using Library81.Services
+@inject IStorageService StorageService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<MudCard>
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Storage" Class="mr-2"/>
+                Gestion du Stockage
+            </MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudAlert Severity="@GetSeverityForMode()" Class="mb-4">
+                    Mode actuel : <strong>@StorageService.CurrentMode</strong>
+                </MudAlert>
+                
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Statistiques</MudText>
+                <MudSimpleTable Dense="true">
+                    <tbody>
+                        <tr>
+                            <td>Livres locaux</td>
+                            <td><MudChip Size="Size.Small">@localStats.BooksCount</MudChip></td>
+                        </tr>
+                        <tr>
+                            <td>Dernière sync</td>
+                            <td>@(lastSync?.ToString("dd/MM HH:mm") ?? "Jamais")</td>
+                        </tr>
+                        <tr>
+                            <td>Taille locale</td>
+                            <td>@FormatSize(localStats.DatabaseSize)</td>
+                        </tr>
+                    </tbody>
+                </MudSimpleTable>
+            </MudItem>
+            
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Actions</MudText>
+                <MudStack>
+                    <MudButton Variant="Variant.Filled" 
+                              Color="Color.Primary" 
+                              StartIcon="@Icons.Material.Filled.Sync"
+                              OnClick="SyncToCloud"
+                              Disabled="@isWorking">
+                        @if (isWorking)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                            <span class="ml-2">Synchronisation...</span>
+                        }
+                        else
+                        {
+                            <span>Synchroniser vers le Cloud</span>
+                        }
+                    </MudButton>
+                    
+                    <MudButton Variant="Variant.Outlined" 
+                              Color="Color.Secondary"
+                              StartIcon="@Icons.Material.Filled.Download"
+                              OnClick="ExportBackup"
+                              Disabled="@isWorking">
+                        Exporter Sauvegarde
+                    </MudButton>
+                    
+                    <MudButton Variant="Variant.Outlined" 
+                              Color="Color.Warning"
+                              StartIcon="@Icons.Material.Filled.Upload"
+                              OnClick="ImportBackup"
+                              Disabled="@isWorking">
+                        Importer Sauvegarde
+                    </MudButton>
+                </MudStack>
+            </MudItem>
+        </MudGrid>
+        
+        @if (syncProgress > 0)
+        {
+            <MudProgressLinear Color="Color.Primary" 
+                              Value="@syncProgress" 
+                              Class="mt-4" />
+            <MudText Typo="Typo.caption" Align="Align.Center">
+                @($"Progression : {syncProgress:F0}%")
+            </MudText>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private bool isWorking = false;
+    private double syncProgress = 0;
+    private DateTime? lastSync;
+    private LocalStats localStats = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStats();
+    }
+
+    private async Task LoadStats()
+    {
+        // Charger les statistiques locales
+        localStats.BooksCount = 150; // À implémenter
+        localStats.DatabaseSize = 2048576; // À implémenter
+        lastSync = DateTime.Now.AddHours(-2); // À implémenter
+    }
+
+    private async Task SyncToCloud()
+    {
+        isWorking = true;
+        syncProgress = 0;
+        
+        try
+        {
+            var result = await StorageService.SyncToCloudAsync();
+            
+            if (result.Success)
+            {
+                Snackbar.Add(result.Message ?? "Synchronisation réussie", Severity.Success);
+                lastSync = DateTime.Now;
+                syncProgress = 100;
+                await Task.Delay(1000);
+            }
+            else
+            {
+                Snackbar.Add(result.Message ?? "Erreur de synchronisation", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isWorking = false;
+            syncProgress = 0;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExportBackup()
+    {
+        isWorking = true;
+        
+        try
+        {
+            var fileName = $"library_backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            var result = await StorageService.ExportBackupAsync($"./backups/{fileName}");
+            
+            if (result.Success)
+            {
+                Snackbar.Add($"Sauvegarde exportée : {fileName}", Severity.Success);
+                
+                // Proposer le téléchargement
+                await JS.InvokeVoidAsync("downloadFile", fileName, $"./backups/{fileName}");
+            }
+            else
+            {
+                Snackbar.Add("Erreur lors de l'export", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isWorking = false;
+        }
+    }
+
+    private async Task ImportBackup()
+    {
+        // Ouvrir un dialog de sélection de fichier
+        var fileInput = await JS.InvokeAsync<string>("selectFile", ".json");
+        
+        if (!string.IsNullOrEmpty(fileInput))
+        {
+            isWorking = true;
+            
+            try
+            {
+                var result = await StorageService.ImportBackupAsync(fileInput);
+                
+                if (result.Success)
+                {
+                    Snackbar.Add("Import réussi", Severity.Success);
+                    await LoadStats();
+                }
+                else
+                {
+                    Snackbar.Add("Erreur lors de l'import", Severity.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+            }
+            finally
+            {
+                isWorking = false;
+            }
+        }
+    }
+
+    private Severity GetSeverityForMode()
+    {
+        return StorageService.CurrentMode switch
+        {
+            StorageMode.LocalOnly => Severity.Warning,
+            StorageMode.CloudOnly => Severity.Info,
+            StorageMode.HybridSync => Severity.Success,
+            StorageMode.OfflineFirst => Severity.Normal,
+            _ => Severity.Normal
+        };
+    }
+
+    private string FormatSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private class LocalStats
+    {
+        public int BooksCount { get; set; }
+        public long DatabaseSize { get; set; }
+    }
+}

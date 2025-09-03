@@ -23,6 +23,10 @@ builder.Services.AddDbContext<LibraryContext>(options =>
         "server=localhost;port=33020;database=library;user=root;password=password;treattinyasboolean=false",
         ServerVersion.Parse("8.0.32-mysql")));
 
+// Add Local SQLite DbContext
+builder.Services.AddDbContext<LocalDbContext>(options =>
+    options.UseSqlite("Data Source=library_local.db"));
+
 // Ajoutez ces lignes après builder.Services.AddMudServices();
 builder.Services.AddHttpClient(); // Si nécessaire
 builder.Services.AddSingleton<IApiService, ApiService>();
@@ -31,8 +35,13 @@ builder.Services.AddSingleton<IApiService, ApiService>();
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IStorageService, HybridStorageService>();
+
 // Add Controllers for API
 builder.Services.AddControllers();
+
+// Service pour la synchronisation automatique
+builder.Services.AddHostedService<SyncBackgroundService>();
 
 // Add CORS for Blazor WebAssembly
 builder.Services.AddCors(options =>

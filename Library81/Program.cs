@@ -19,12 +19,24 @@ builder.Services.AddDbContext<LocalDbContext>(options =>
     options.UseSqlite("Data Source=library_local.db"));
 
 // Services
-builder.Services.AddSingleton<IBookService, BookService>();
-builder.Services.AddSingleton<ICategoryService, CategoryService>();
-builder.Services.AddSingleton<IGameService, GameService>();
-builder.Services.AddSingleton<IStorageService, HybridStorageService>();
+builder.Services.AddScoped<IBookService, BookService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IStorageService, HybridStorageService>();
 
-builder.Services.AddSingleton<IApiService, ApiService>();
+// API client service: register a typed HttpClient so ApiService receives a configured HttpClient
+builder.Services.AddHttpClient<IApiService, ApiService>(client =>
+{
+    // Base address for API calls from server-side rendering. You can override via configuration key "ApiBaseAddress".
+    var baseAddr = builder.Configuration["ApiBaseAddress"];
+    if (string.IsNullOrEmpty(baseAddr))
+    {
+        // fallback to the current server's origin
+        baseAddr = "https://localhost:5001/";
+    }
+    client.BaseAddress = new Uri(baseAddr);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
 
 // Service pour la synchronisation automatique
 builder.Services.AddHostedService<SyncBackgroundService>();

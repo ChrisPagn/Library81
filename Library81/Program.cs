@@ -32,7 +32,7 @@ builder.Services.AddHttpClient<IApiService, ApiService>(client =>
     if (string.IsNullOrEmpty(baseAddr))
     {
         // fallback to the current server's origin
-        baseAddr = "https://localhost:5001/";
+        baseAddr = "https://localhost:7215/";
     }
     client.BaseAddress = new Uri(baseAddr);
     client.DefaultRequestHeaders.Add("Accept", "application/json");

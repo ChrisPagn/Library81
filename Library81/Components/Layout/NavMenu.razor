@@ -1,30 +1,68 @@
 ﻿@* Library81/Components/Layout/NavMenu.razor *@
 <MudNavMenu>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Accueil</MudNavLink>
-    <MudNavGroup Title="Gestion" Expanded="@_gestionExpanded" Icon="@Icons.Material.Filled.Settings" OnClick="ToggleGestion">
+
+    <MudNavGroup Title="Gestion"
+                 Expanded="@_gestionExpanded"
+                 Icon="@Icons.Material.Filled.Settings"
+                 ExpandIcon="@Icons.Material.Filled.ExpandMore"
+                 OnExpandedChanged="@OnGestionExpandedChanged">
         <MudNavLink Href="/books" Icon="@Icons.Material.Filled.Book">Livres</MudNavLink>
         <MudNavLink Href="/games" Icon="@Icons.Material.Filled.SportsEsports">Jeux</MudNavLink>
         <MudNavLink Href="/movies" Icon="@Icons.Material.Filled.Movie">Films</MudNavLink>
     </MudNavGroup>
-    <MudNavGroup Title="Configuration" Expanded="@_configExpanded" Icon="@Icons.Material.Filled.Build" OnClick="ToggleConfig">
+
+    <MudNavGroup Title="Configuration"
+                 Expanded="@_configExpanded"
+                 Icon="@Icons.Material.Filled.Build"
+                 ExpandIcon="@Icons.Material.Filled.ExpandMore"
+                 OnExpandedChanged="@OnConfigExpandedChanged">
         <MudNavLink Href="/categories" Icon="@Icons.Material.Filled.Category">Catégories</MudNavLink>
         <MudNavLink Href="/subcategories" Icon="@Icons.Material.Filled.Folder">Sous-catégories</MudNavLink>
         <MudNavLink Href="/genres" Icon="@Icons.Material.Filled.Style">Genres</MudNavLink>
     </MudNavGroup>
+
+    <MudDivider Class="my-2" />
+
     <MudNavLink Href="/counter" Icon="@Icons.Material.Filled.Add">Counter</MudNavLink>
     <MudNavLink Href="/weather" Icon="@Icons.Material.Filled.Cloud">Weather</MudNavLink>
+    <MudNavLink Href="/book3d" Icon="@Icons.Material.Filled.ViewInAr">Livre 3D</MudNavLink>
 </MudNavMenu>
 
 @code {
-    private bool _gestionExpanded = true;
+    private bool _gestionExpanded = false;
     private bool _configExpanded = false;
 
-    private void ToggleGestion()
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    protected override void OnInitialized()
     {
-        _gestionExpanded = !_gestionExpanded;
+        Navigation.LocationChanged += HandleLocationChanged;
+        HandleLocationChanged(this, new LocationChangedEventArgs(Navigation.Uri, false));
     }
-    private void ToggleConfig()
+
+    private void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        _configExpanded = !_configExpanded;
+        var uri = e.Location.ToLower();
+
+        _gestionExpanded = uri.Contains("books") || uri.Contains("games") || uri.Contains("movies");
+        _configExpanded = uri.Contains("categories") || uri.Contains("subcategories") || uri.Contains("genres");
+
+        StateHasChanged();
+    }
+
+    private void OnGestionExpandedChanged(bool expanded)
+    {
+        _gestionExpanded = expanded;
+    }
+
+    private void OnConfigExpandedChanged(bool expanded)
+    {
+        _configExpanded = expanded;
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= HandleLocationChanged;
     }
 }

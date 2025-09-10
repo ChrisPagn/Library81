@@ -1,4 +1,4 @@
-﻿@* Library81/Components/Layout/NavMenu.razor *@
+﻿@* Library81/Components/Layout/NavMenu.razor - Version optimisée *@
 <MudNavMenu>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Accueil</MudNavLink>
 
@@ -6,7 +6,7 @@
                  Expanded="@_gestionExpanded"
                  Icon="@Icons.Material.Filled.Settings"
                  ExpandIcon="@Icons.Material.Filled.ExpandMore"
-                 OnExpandedChanged="@OnGestionExpandedChanged">
+                 OnClick="ToggleGestion">
         <MudNavLink Href="/books" Icon="@Icons.Material.Filled.Book">Livres</MudNavLink>
         <MudNavLink Href="/games" Icon="@Icons.Material.Filled.SportsEsports">Jeux</MudNavLink>
         <MudNavLink Href="/movies" Icon="@Icons.Material.Filled.Movie">Films</MudNavLink>
@@ -16,7 +16,7 @@
                  Expanded="@_configExpanded"
                  Icon="@Icons.Material.Filled.Build"
                  ExpandIcon="@Icons.Material.Filled.ExpandMore"
-                 OnExpandedChanged="@OnConfigExpandedChanged">
+                 OnClick="ToggleConfig">
         <MudNavLink Href="/categories" Icon="@Icons.Material.Filled.Category">Catégories</MudNavLink>
         <MudNavLink Href="/subcategories" Icon="@Icons.Material.Filled.Folder">Sous-catégories</MudNavLink>
         <MudNavLink Href="/genres" Icon="@Icons.Material.Filled.Style">Genres</MudNavLink>
@@ -33,36 +33,12 @@
     private bool _gestionExpanded = false;
     private bool _configExpanded = false;
 
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
-
-    protected override void OnInitialized()
+    private void ToggleGestion()
     {
-        Navigation.LocationChanged += HandleLocationChanged;
-        HandleLocationChanged(this, new LocationChangedEventArgs(Navigation.Uri, false));
+        _gestionExpanded = !_gestionExpanded;
     }
-
-    private void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
+    private void ToggleConfig()
     {
-        var uri = e.Location.ToLower();
-
-        _gestionExpanded = uri.Contains("books") || uri.Contains("games") || uri.Contains("movies");
-        _configExpanded = uri.Contains("categories") || uri.Contains("subcategories") || uri.Contains("genres");
-
-        StateHasChanged();
-    }
-
-    private void OnGestionExpandedChanged(bool expanded)
-    {
-        _gestionExpanded = expanded;
-    }
-
-    private void OnConfigExpandedChanged(bool expanded)
-    {
-        _configExpanded = expanded;
-    }
-
-    public void Dispose()
-    {
-        Navigation.LocationChanged -= HandleLocationChanged;
+        _configExpanded = !_configExpanded;
     }
 }

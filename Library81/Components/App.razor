@@ -1,4 +1,4 @@
-﻿@* Library81/Components/App.razor *@
+﻿@* Library81/Components/App.razor - Avec configuration rendermode *@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -13,7 +13,7 @@
     <HeadOutlet />
 </head>
 <body>
-    <Routes/>
+    <Routes @rendermode="InteractiveAuto" />
     <script src="_framework/blazor.web.js"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
 </body>

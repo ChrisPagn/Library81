@@ -1,0 +1,189 @@
+﻿@* ========================================== *@
+
+@* Library81.Client/Pages/Genres/GenreList.razor *@
+@page "/genres"
+@using Library81.Client.Services
+@using Library81.Shared.DTOs
+@inject IApiService ApiService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@rendermode InteractiveAuto
+
+<PageTitle>Gestion des Genres</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Gestion des Genres</MudText>
+
+<MudCard>
+    <MudCardContent>
+        <MudGrid>
+            <MudItem xs="12" Class="d-flex justify-end">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="OpenCreateDialog">
+                    Nouveau Genre
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudCardContent>
+</MudCard>
+
+<MudCard Class="mt-4">
+    <MudCardContent Class="pa-0">
+        <MudDataGrid T="GenreDto"
+                     Items="@genres"
+                     Loading="@loading"
+                     Hover="true"
+                     SortMode="SortMode.Single"
+                     Filterable="true"
+                     QuickFilter="@_quickFilter"
+                     FixedHeader="true"
+                     Height="400px">
+            <ToolBarContent>
+                <MudTextField @bind-Value="searchString"
+                              Placeholder="Rechercher un genre..."
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-0"
+                              DebounceInterval="300"
+                              OnDebounceIntervalElapsed="StateHasChanged" />
+                <MudSpacer />
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn Property="x => x.GenreId" Title="ID" />
+                <PropertyColumn Property="x => x.Name" Title="Nom du genre" />
+                <TemplateColumn Title="Actions" Sortable="false">
+                    <CellTemplate>
+                        <MudStack Row="true">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           OnClick="@(() => OpenEditDialog(context.Item))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           OnClick="@(() => DeleteGenre(context.Item))" />
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="GenreDto" />
+            </PagerContent>
+        </MudDataGrid>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private List<GenreDto> genres = new();
+    private bool loading = true;
+    private string searchString = "";
+
+    private Func<GenreDto, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        if (x.Name?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+
+        return false;
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGenres();
+    }
+
+    private async Task LoadGenres()
+    {
+        loading = true;
+        var response = await ApiService.GetAsync<List<GenreDto>>("genres");
+
+        if (response.Success && response.Data != null)
+        {
+            genres = response.Data;
+        }
+        else
+        {
+            Snackbar.Add(response.Message ?? "Erreur lors du chargement", Severity.Error);
+        }
+
+        loading = false;
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<GenreDialog>();
+        var dialog = await DialogService.ShowAsync<GenreDialog>("Nouveau Genre", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is GenreDto newGenre)
+        {
+            var response = await ApiService.PostAsync<GenreDto>("genres", newGenre);
+
+            if (response.Success)
+            {
+                Snackbar.Add("Genre créé avec succès", Severity.Success);
+                await LoadGenres();
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors de la création", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditDialog(GenreDto genre)
+    {
+        var parameters = new DialogParameters<GenreDialog>
+        {
+            { x => x.Genre, genre }
+        };
+
+        var dialog = await DialogService.ShowAsync<GenreDialog>("Modifier Genre", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is GenreDto editedGenre)
+        {
+            var response = await ApiService.PutAsync<GenreDto>($"genres/{genre.GenreId}", editedGenre);
+
+            if (response.Success)
+            {
+                Snackbar.Add("Genre modifié avec succès", Severity.Success);
+                await LoadGenres();
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors de la modification", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteGenre(GenreDto genre)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, $"Êtes-vous sûr de vouloir supprimer le genre '{genre.Name}' ?" },
+            { x => x.ButtonText, "Supprimer" },
+            { x => x.Color, Color.Error }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirmer la suppression", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var response = await ApiService.DeleteAsync<bool>($"genres/{genre.GenreId}");
+
+            if (response.Success)
+            {
+                Snackbar.Add("Genre supprimé avec succès", Severity.Success);
+                await LoadGenres();
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors de la suppression", Severity.Error);
+            }
+        }
+    }
+}

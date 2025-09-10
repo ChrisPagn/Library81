@@ -1,0 +1,181 @@
+﻿@* Library81.Client/Pages/Movies/MovieForm.razor *@
+@page "/movies/new"
+@page "/movies/edit/{Id:int}"
+@using Library81.Client.Services
+@using Library81.Shared.DTOs
+@inject IApiService ApiService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@rendermode InteractiveAuto
+
+<PageTitle>@(Id == null ? "Nouveau Film" : "Modifier Film")</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@(Id == null ? "Nouveau Film" : "Modifier Film")</MudText>
+
+<MudCard>
+    <MudCardContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="movie.Title"
+                                  Label="Titre"
+                                  Required="true"
+                                  RequiredError="Le titre est requis" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="movie.Creator" Label="Réalisateur" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="movie.Publisher" Label="Studio/Distributeur" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudNumericField @bind-Value="movie.Year" Label="Année" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTimePicker @bind-Time="durationTime"
+                                   Label="Durée"
+                                   TimeFormat="HH:mm"
+                                   AmPm="false" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect @bind-Value="movie.Rating"
+                               Label="Classification"
+                               AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem Value="@((string?)null)">-- Sélectionner --</MudSelectItem>
+                        <MudSelectItem Value="@("G")">G - Tout public</MudSelectItem>
+                        <MudSelectItem Value="@("PG")">PG - Accord parental recommandé</MudSelectItem>
+                        <MudSelectItem Value="@("PG-13")">PG-13 - Interdit aux moins de 13 ans</MudSelectItem>
+                        <MudSelectItem Value="@("R")">R - Interdit aux moins de 17 ans</MudSelectItem>
+                        <MudSelectItem Value="@("NC-17")">NC-17 - Interdit aux moins de 18 ans</MudSelectItem>
+                        <MudSelectItem Value="@("U")">U - Universal (UK)</MudSelectItem>
+                        <MudSelectItem Value="@("PG (UK)")">PG - Parental Guidance (UK)</MudSelectItem>
+                        <MudSelectItem Value="@("12A")">12A (UK)</MudSelectItem>
+                        <MudSelectItem Value="@("15")">15 (UK)</MudSelectItem>
+                        <MudSelectItem Value="@("18")">18 (UK)</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect @bind-Value="movie.SubcategoryId"
+                               Label="Sous-catégorie"
+                               AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem Value="@((int?)null)">-- Sélectionner --</MudSelectItem>
+                        @foreach (var subcategory in subcategories)
+                        {
+                            <MudSelectItem Value="@((int?)subcategory.SubcategoryId)">
+                                @subcategory.Name @(subcategory.CategoryName != null ? $" ({subcategory.CategoryName})" : "")
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="movie.ImageUrl" Label="URL de l'image/affiche" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="movie.Description"
+                                  Label="Synopsis"
+                                  Lines="4" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="Submit"
+                   Disabled="@(!success)">
+            @(Id == null ? "Créer" : "Enregistrer")
+        </MudButton>
+    </MudCardActions>
+</MudCard>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private MudForm form = default!;
+    private MovieDto movie = new();
+    private List<SubcategoryDto> subcategories = new();
+    private bool success;
+    private string[] errors = { };
+    private TimeSpan? durationTime;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReferenceData();
+
+        if (Id.HasValue)
+        {
+            await LoadMovie();
+        }
+    }
+
+    private async Task LoadReferenceData()
+    {
+        var subcategoriesResponse = await ApiService.GetAsync<List<SubcategoryDto>>("subcategories");
+        if (subcategoriesResponse.Success && subcategoriesResponse.Data != null)
+        {
+            subcategories = subcategoriesResponse.Data;
+        }
+    }
+
+    private async Task LoadMovie()
+    {
+        var response = await ApiService.GetAsync<MovieDto>($"movies/{Id}");
+        if (response.Success && response.Data != null)
+        {
+            movie = response.Data;
+
+            // Convertir Duration en TimeSpan pour le TimePicker
+            if (movie.Duration.HasValue)
+            {
+                durationTime = movie.Duration.Value.ToTimeSpan();
+            }
+        }
+        else
+        {
+            Snackbar.Add(response.Message ?? "Film non trouvé", Severity.Error);
+            Navigation.NavigateTo("/movies");
+        }
+    }
+
+    private async Task Submit()
+    {
+        await form.Validate();
+
+        if (form.IsValid)
+        {
+            // Convertir TimeSpan en TimeOnly pour la base de données
+            if (durationTime.HasValue)
+            {
+                movie.Duration = TimeOnly.FromTimeSpan(durationTime.Value);
+            }
+
+            ApiResponse<MovieDto> response;
+
+            if (Id == null)
+            {
+                response = await ApiService.PostAsync<MovieDto>("movies", movie);
+            }
+            else
+            {
+                response = await ApiService.PutAsync<MovieDto>($"movies/{Id}", movie);
+            }
+
+            if (response.Success)
+            {
+                Snackbar.Add(response.Message ?? "Opération réussie", Severity.Success);
+                Navigation.NavigateTo("/movies");
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors de l'enregistrement", Severity.Error);
+            }
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/movies");
+    }
+}

@@ -1,3 +1,4 @@
+@* Library81.Client/Pages/Movies/MovieList.razor *@
 @page "/movies"
 @using Library81.Client.Services
 @using Library81.Shared.DTOs
@@ -17,18 +18,18 @@
     <MudCardContent>
         <MudGrid>
             <MudItem xs="12" sm="6" md="8">
-                <MudTextField @bind-Value="searchString" 
-                             Placeholder="Rechercher..." 
-                             Adornment="Adornment.Start" 
-                             AdornmentIcon="@Icons.Material.Filled.Search" 
-                             IconSize="Size.Medium" 
-                             Class="mt-0"
-                             DebounceInterval="500" 
-                             OnDebounceIntervalElapsed="@(() => LoadMovies())" />
+                <MudTextField @bind-Value="searchString"
+                              Placeholder="Rechercher..."
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-0"
+                              DebounceInterval="500"
+                              OnDebounceIntervalElapsed="@(() => LoadMovies())" />
             </MudItem>
             <MudItem xs="12" sm="6" md="4" Class="d-flex justify-end">
-                <MudButton Variant="Variant.Filled" 
-                           Color="Color.Primary" 
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Add"
                            OnClick="@(() => Navigation.NavigateTo("/movies/new"))">
                     Nouveau Film
@@ -40,34 +41,47 @@
 
 <MudCard Class="mt-4">
     <MudCardContent Class="pa-0">
-        <MudDataGrid T="MovieDto" 
-                    Items="@movies" 
-                    Loading="@loading" 
-                    Hover="true" 
-                    SortMode="SortMode.Multiple" 
-                    Filterable="true" 
-                    QuickFilter="@_quickFilter" 
-                    Virtualize="true" 
-                    FixedHeader="true" 
-                    Height="600px">
+        <MudDataGrid T="MovieDto"
+                     Items="@movies"
+                     Loading="@loading"
+                     Hover="true"
+                     SortMode="SortMode.Multiple"
+                     Filterable="true"
+                     QuickFilter="@_quickFilter"
+                     Virtualize="true"
+                     FixedHeader="true"
+                     Height="600px">
             <Columns>
                 <PropertyColumn Property="x => x.Title" Title="Titre" />
                 <PropertyColumn Property="x => x.Creator" Title="Réalisateur" />
-                <PropertyColumn Property="x => x.Duration" Title="Durée" />
-                <PropertyColumn Property="x => x.Rating" Title="Classification" />
+                <PropertyColumn Property="x => x.Publisher" Title="Studio" />
                 <PropertyColumn Property="x => x.Year" Title="Année" />
+                <TemplateColumn Title="Durée">
+                    <CellTemplate>
+                        @if (context.Item.Duration.HasValue)
+                        {
+                            var timeSpan = context.Item.Duration.Value.ToTimeSpan();
+                            <span>@($"{(int)timeSpan.TotalHours:D2}h{timeSpan.Minutes:D2}")</span>
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+                <PropertyColumn Property="x => x.Rating" Title="Classification" />
                 <PropertyColumn Property="x => x.SubcategoryName" Title="Sous-catégorie" />
                 <TemplateColumn Title="Actions" Sortable="false">
                     <CellTemplate>
                         <MudStack Row="true">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                                         Color="Color.Primary" 
-                                         Size="Size.Small"
-                                         OnClick="@(() => EditMovie(context.Item))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                                         Color="Color.Error" 
-                                         Size="Size.Small"
-                                         OnClick="@(() => DeleteMovie(context.Item))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           OnClick="@(() => EditMovie(context.Item))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           OnClick="@(() => DeleteMovie(context.Item))" />
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>
@@ -95,7 +109,7 @@
         if (x.Creator?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
             return true;
 
-        if (x.Rating?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
+        if (x.Publisher?.Contains(searchString, StringComparison.OrdinalIgnoreCase) == true)
             return true;
 
         return false;

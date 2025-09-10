@@ -1,0 +1,163 @@
+﻿@* Library81.Client/Pages/Games/GameForm.razor *@
+@page "/games/new"
+@page "/games/edit/{Id:int}"
+@using Library81.Client.Services
+@using Library81.Shared.DTOs
+@inject IApiService ApiService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@rendermode InteractiveAuto
+
+<PageTitle>@(Id == null ? "Nouveau Jeu" : "Modifier Jeu")</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@(Id == null ? "Nouveau Jeu" : "Modifier Jeu")</MudText>
+
+<MudCard>
+    <MudCardContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="game.Title"
+                                  Label="Titre"
+                                  Required="true"
+                                  RequiredError="Le titre est requis" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="game.Creator" Label="Développeur" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="game.Publisher" Label="Éditeur" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudNumericField @bind-Value="game.Year" Label="Année" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="game.Platform" Label="Plateforme" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect @bind-Value="game.AgeRange"
+                               Label="Classification d'âge"
+                               AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem Value="@((string?)null)">-- Sélectionner --</MudSelectItem>
+                        <MudSelectItem Value="@("PEGI 3")">PEGI 3</MudSelectItem>
+                        <MudSelectItem Value="@("PEGI 7")">PEGI 7</MudSelectItem>
+                        <MudSelectItem Value="@("PEGI 12")">PEGI 12</MudSelectItem>
+                        <MudSelectItem Value="@("PEGI 16")">PEGI 16</MudSelectItem>
+                        <MudSelectItem Value="@("PEGI 18")">PEGI 18</MudSelectItem>
+                        <MudSelectItem Value="@("E - Everyone")">E - Everyone</MudSelectItem>
+                        <MudSelectItem Value="@("T - Teen")">T - Teen</MudSelectItem>
+                        <MudSelectItem Value="@("M - Mature")">M - Mature</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect @bind-Value="game.SubcategoryId"
+                               Label="Sous-catégorie"
+                               AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem Value="@((int?)null)">-- Sélectionner --</MudSelectItem>
+                        @foreach (var subcategory in subcategories)
+                        {
+                            <MudSelectItem Value="@((int?)subcategory.SubcategoryId)">
+                                @subcategory.Name @(subcategory.CategoryName != null ? $" ({subcategory.CategoryName})" : "")
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="game.ImageUrl" Label="URL de l'image" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="game.Description"
+                                  Label="Description"
+                                  Lines="4" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="Submit"
+                   Disabled="@(!success)">
+            @(Id == null ? "Créer" : "Enregistrer")
+        </MudButton>
+    </MudCardActions>
+</MudCard>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private MudForm form = default!;
+    private GameDto game = new();
+    private List<SubcategoryDto> subcategories = new();
+    private bool success;
+    private string[] errors = { };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReferenceData();
+
+        if (Id.HasValue)
+        {
+            await LoadGame();
+        }
+    }
+
+    private async Task LoadReferenceData()
+    {
+        var subcategoriesResponse = await ApiService.GetAsync<List<SubcategoryDto>>("subcategories");
+        if (subcategoriesResponse.Success && subcategoriesResponse.Data != null)
+        {
+            subcategories = subcategoriesResponse.Data;
+        }
+    }
+
+    private async Task LoadGame()
+    {
+        var response = await ApiService.GetAsync<GameDto>($"games/{Id}");
+        if (response.Success && response.Data != null)
+        {
+            game = response.Data;
+        }
+        else
+        {
+            Snackbar.Add(response.Message ?? "Jeu non trouvé", Severity.Error);
+            Navigation.NavigateTo("/games");
+        }
+    }
+
+    private async Task Submit()
+    {
+        await form.Validate();
+
+        if (form.IsValid)
+        {
+            ApiResponse<GameDto> response;
+
+            if (Id == null)
+            {
+                response = await ApiService.PostAsync<GameDto>("games", game);
+            }
+            else
+            {
+                response = await ApiService.PutAsync<GameDto>($"games/{Id}", game);
+            }
+
+            if (response.Success)
+            {
+                Snackbar.Add(response.Message ?? "Opération réussie", Severity.Success);
+                Navigation.NavigateTo("/games");
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors de l'enregistrement", Severity.Error);
+            }
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/games");
+    }
+}

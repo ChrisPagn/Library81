@@ -1,0 +1,215 @@
+﻿@* ========================================== *@
+
+@* Library81.Client/Pages/Subcategories/SubcategoryList.razor *@
+@page "/subcategories"
+@using Library81.Client.Services
+@using Library81.Shared.DTOs
+@inject IApiService ApiService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@rendermode InteractiveAuto
+
+<PageTitle>Gestion des Sous-catégories</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Gestion des Sous-catégories</MudText>
+
+<MudCard>
+    <MudCardContent>
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="8">
+                <MudSelect @bind-Value="selectedCategoryId"
+                           Label="Filtrer par catégorie"
+                           AnchorOrigin="Origin.BottomCenter"
+                           Class="mt-0"
+                           OnSelectionChanged="FilterByCategory">
+                    <MudSelectItem Value="@((int?)null)">-- Toutes les catégories --</MudSelectItem>
+                    @foreach (var category in categories)
+                    {
+                        <MudSelectItem Value="@((int?)category.CategoryId)">@category.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4" Class="d-flex justify-end">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="OpenCreateDialog">
+                    Nouvelle Sous-catégorie
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudCardContent>
+</MudCard>
+
+<MudGrid Class="mt-4">
+    @if (loading)
+    {
+        <MudItem xs="12" Class="d-flex justify-center">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </MudItem>
+    }
+    else
+    {
+        @foreach (var subcategory in filteredSubcategories)
+        {
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">@subcategory.Name</MudText>
+                        <MudText Typo="Typo.body2" Class="mb-2">@subcategory.Description</MudText>
+
+                        @if (!string.IsNullOrEmpty(subcategory.CategoryName))
+                        {
+                            <MudChip T="string"
+                                     Text="@subcategory.CategoryName"
+                                     Size="Size.Small"
+                                     Color="Color.Secondary"
+                                     Variant="Variant.Filled">
+                            </MudChip>
+                        }
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                                       OnClick="@(() => OpenEditDialog(subcategory))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                       OnClick="@(() => DeleteSubcategory(subcategory))" />
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    }
+</MudGrid>
+
+@code {
+    private List<SubcategoryDto> subcategories = new();
+    private List<SubcategoryDto> filteredSubcategories = new();
+    private List<CategoryDto> categories = new();
+    private bool loading = true;
+    private int? selectedCategoryId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+        await LoadSubcategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        var response = await ApiService.GetAsync<List<CategoryDto>>("categories");
+        if (response.Success && response.Data != null)
+        {
+            categories = response.Data;
+        }
+    }
+
+    private async Task LoadSubcategories()
+    {
+        loading = true;
+        var response = await ApiService.GetAsync<List<SubcategoryDto>>("subcategories");
+
+        if (response.Success && response.Data != null)
+        {
+            subcategories = response.Data;
+            FilterByCategory();
+        }
+        else
+        {
+            Snackbar.Add(response.Message ?? "Erreur lors du chargement", Severity.Error);
+        }
+
+        loading = false;
+    }
+
+    private void FilterByCategory()
+    {
+        if (selectedCategoryId.HasValue)
+        {
+            filteredSubcategories = subcategories
+                .Where(s => s.CategoryId == selectedCategoryId.Value)
+                .ToList();
+        }
+        else
+        {
+            filteredSubcategories = subcategories.ToList();
+        }
+        StateHasChanged();
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<SubcategoryDialog>
+        {
+            { x => x.Categories, categories }
+        };
+        var dialog = await DialogService.ShowAsync<SubcategoryDialog>("Nouvelle Sous-catégorie", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is SubcategoryDto newSubcategory)
+        {
+            var response = await ApiService.PostAsync<SubcategoryDto>("subcategories", newSubcategory);
+
+            if (response.Success)
+            {
+                Snackbar.Add("Sous-catégorie créée avec succès", Severity.Success);
+                await LoadSubcategories();
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors de la création", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditDialog(SubcategoryDto subcategory)
+    {
+        var parameters = new DialogParameters<SubcategoryDialog>
+        {
+            { x => x.Subcategory, subcategory },
+            { x => x.Categories, categories }
+        };
+
+        var dialog = await DialogService.ShowAsync<SubcategoryDialog>("Modifier Sous-catégorie", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is SubcategoryDto editedSubcategory)
+        {
+            var response = await ApiService.PutAsync<SubcategoryDto>($"subcategories/{subcategory.SubcategoryId}", editedSubcategory);
+
+            if (response.Success)
+            {
+                Snackbar.Add("Sous-catégorie modifiée avec succès", Severity.Success);
+                await LoadSubcategories();
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors de la modification", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteSubcategory(SubcategoryDto subcategory)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, $"Êtes-vous sûr de vouloir supprimer la sous-catégorie '{subcategory.Name}' ?" },
+            { x => x.ButtonText, "Supprimer" },
+            { x => x.Color, Color.Error }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirmer la suppression", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var response = await ApiService.DeleteAsync<bool>($"subcategories/{subcategory.SubcategoryId}");
+
+            if (response.Success)
+            {
+                Snackbar.Add("Sous-catégorie supprimée avec succès", Severity.Success);
+                await LoadSubcategories();
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors de la suppression", Severity.Error);
+            }
+        }
+    }
+}

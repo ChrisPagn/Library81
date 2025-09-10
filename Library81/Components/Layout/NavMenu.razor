@@ -1,12 +1,12 @@
 ﻿@* Library81/Components/Layout/NavMenu.razor *@
 <MudNavMenu>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Accueil</MudNavLink>
-    <MudNavGroup Title="Gestion" Expanded="true" Icon="@Icons.Material.Filled.Settings">
+    <MudNavGroup Title="Gestion" Expanded="@_gestionExpanded" Icon="@Icons.Material.Filled.Settings" OnClick="ToggleGestion">
         <MudNavLink Href="/books" Icon="@Icons.Material.Filled.Book">Livres</MudNavLink>
         <MudNavLink Href="/games" Icon="@Icons.Material.Filled.SportsEsports">Jeux</MudNavLink>
         <MudNavLink Href="/movies" Icon="@Icons.Material.Filled.Movie">Films</MudNavLink>
     </MudNavGroup>
-    <MudNavGroup Title="Configuration" Icon="@Icons.Material.Filled.Build">
+    <MudNavGroup Title="Configuration" Expanded="@_configExpanded" Icon="@Icons.Material.Filled.Build" OnClick="ToggleConfig">
         <MudNavLink Href="/categories" Icon="@Icons.Material.Filled.Category">Catégories</MudNavLink>
         <MudNavLink Href="/subcategories" Icon="@Icons.Material.Filled.Folder">Sous-catégories</MudNavLink>
         <MudNavLink Href="/genres" Icon="@Icons.Material.Filled.Style">Genres</MudNavLink>
@@ -14,3 +14,17 @@
     <MudNavLink Href="/counter" Icon="@Icons.Material.Filled.Add">Counter</MudNavLink>
     <MudNavLink Href="/weather" Icon="@Icons.Material.Filled.Cloud">Weather</MudNavLink>
 </MudNavMenu>
+
+@code {
+    private bool _gestionExpanded = true;
+    private bool _configExpanded = false;
+
+    private void ToggleGestion()
+    {
+        _gestionExpanded = !_gestionExpanded;
+    }
+    private void ToggleConfig()
+    {
+        _configExpanded = !_configExpanded;
+    }
+}

@@ -1,3 +1,4 @@
+@* Library81.Client/Pages/Games/GameList.razor *@
 @page "/games"
 @using Library81.Client.Services
 @using Library81.Shared.DTOs
@@ -17,18 +18,18 @@
     <MudCardContent>
         <MudGrid>
             <MudItem xs="12" sm="6" md="8">
-                <MudTextField @bind-Value="searchString" 
-                             Placeholder="Rechercher..." 
-                             Adornment="Adornment.Start" 
-                             AdornmentIcon="@Icons.Material.Filled.Search" 
-                             IconSize="Size.Medium" 
-                             Class="mt-0"
-                             DebounceInterval="500" 
-                             OnDebounceIntervalElapsed="@(() => LoadGames())" />
+                <MudTextField @bind-Value="searchString"
+                              Placeholder="Rechercher..."
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-0"
+                              DebounceInterval="500"
+                              OnDebounceIntervalElapsed="@(() => LoadGames())" />
             </MudItem>
             <MudItem xs="12" sm="6" md="4" Class="d-flex justify-end">
-                <MudButton Variant="Variant.Filled" 
-                           Color="Color.Primary" 
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Add"
                            OnClick="@(() => Navigation.NavigateTo("/games/new"))">
                     Nouveau Jeu
@@ -40,34 +41,35 @@
 
 <MudCard Class="mt-4">
     <MudCardContent Class="pa-0">
-        <MudDataGrid T="GameDto" 
-                    Items="@games" 
-                    Loading="@loading" 
-                    Hover="true" 
-                    SortMode="SortMode.Multiple" 
-                    Filterable="true" 
-                    QuickFilter="@_quickFilter" 
-                    Virtualize="true" 
-                    FixedHeader="true" 
-                    Height="600px">
+        <MudDataGrid T="GameDto"
+                     Items="@games"
+                     Loading="@loading"
+                     Hover="true"
+                     SortMode="SortMode.Multiple"
+                     Filterable="true"
+                     QuickFilter="@_quickFilter"
+                     Virtualize="true"
+                     FixedHeader="true"
+                     Height="600px">
             <Columns>
                 <PropertyColumn Property="x => x.Title" Title="Titre" />
-                <PropertyColumn Property="x => x.Creator" Title="Auteur" />
+                <PropertyColumn Property="x => x.Creator" Title="Développeur" />
+                <PropertyColumn Property="x => x.Publisher" Title="Éditeur" />
                 <PropertyColumn Property="x => x.Platform" Title="Plateforme" />
-                <PropertyColumn Property="x => x.AgeRange" Title="Tranche d'âge" />
+                <PropertyColumn Property="x => x.AgeRange" Title="Classification" />
                 <PropertyColumn Property="x => x.Year" Title="Année" />
                 <PropertyColumn Property="x => x.SubcategoryName" Title="Sous-catégorie" />
                 <TemplateColumn Title="Actions" Sortable="false">
                     <CellTemplate>
                         <MudStack Row="true">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                                         Color="Color.Primary" 
-                                         Size="Size.Small"
-                                         OnClick="@(() => EditGame(context.Item))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                                         Color="Color.Error" 
-                                         Size="Size.Small"
-                                         OnClick="@(() => DeleteGame(context.Item))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           OnClick="@(() => EditGame(context.Item))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           OnClick="@(() => DeleteGame(context.Item))" />
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>

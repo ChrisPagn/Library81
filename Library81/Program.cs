@@ -23,6 +23,7 @@ builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IStorageService, HybridStorageService>();
+builder.Services.AddScoped<IMovieService, MovieService>(); // Register newly created services
 
 // API client service: register a typed HttpClient so ApiService receives a configured HttpClient
 builder.Services.AddHttpClient<IApiService, ApiService>(client =>

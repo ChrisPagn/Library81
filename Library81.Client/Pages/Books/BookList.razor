@@ -111,25 +111,47 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (ApiService == null)
+        {
+            Snackbar.Add("ApiService non disponible", Severity.Error);
+            return;
+        }
+
         await LoadBooks();
     }
 
     private async Task LoadBooks()
     {
-        loading = true;
-        var response = await ApiService.GetAsync<List<BookDto>>("books");
-        
-        if (response.Success && response.Data != null)
+        try
         {
-            books = response.Data;
+            Console.WriteLine("Début du chargement des livres...");
+            loading = true;
+            StateHasChanged(); // Force le rendu du loading
+
+            var response = await ApiService.GetAsync<List<BookDto>>("books");
+            Console.WriteLine($"Réponse API: Success={response.Success}, Message={response.Message}");
+
+            if (response.Success && response.Data != null)
+            {
+                books = response.Data;
+                Console.WriteLine($"{books.Count} livres chargés");
+            }
+            else
+            {
+                Snackbar.Add(response.Message ?? "Erreur lors du chargement des livres", Severity.Error);
+                Console.WriteLine("Erreur de chargement");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Snackbar.Add(response.Message ?? "Erreur lors du chargement des livres", Severity.Error);
+            Console.WriteLine($"Exception: {ex.Message}");
+            Snackbar.Add($"Erreur: {ex.Message}", Severity.Error);
         }
-        
-        loading = false;
-        StateHasChanged();
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
     }
 
     private void EditBook(BookDto book)

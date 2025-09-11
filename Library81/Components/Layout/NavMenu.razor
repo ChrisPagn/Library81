@@ -5,7 +5,7 @@
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Accueil</MudNavLink>
 
     <MudNavGroup Title="Gestion"
-                 Expanded="@_gestionExpanded"
+                 @bind-Expanded="@_gestionExpanded"
                  Icon="@Icons.Material.Filled.Settings"
                  ExpandIcon="@Icons.Material.Filled.ExpandMore">
         <MudNavLink Href="/books" Icon="@Icons.Material.Filled.Book">Livres</MudNavLink>
@@ -14,7 +14,7 @@
     </MudNavGroup>
 
     <MudNavGroup Title="Configuration"
-                 Expanded="@_configExpanded"
+                 @bind-Expanded="@_configExpanded"
                  Icon="@Icons.Material.Filled.Build"
                  ExpandIcon="@Icons.Material.Filled.ExpandMore">
         <MudNavLink Href="/categories" Icon="@Icons.Material.Filled.Category">Catégories</MudNavLink>
@@ -30,9 +30,6 @@
 </MudNavMenu>
 
 @code {
-    private bool _gestionExpanded = false;
-    private bool _configExpanded = false;
-
-    // Ces méthodes ne sont plus nécessaires car MudNavGroup gère l'expansion automatiquement
-    // Si vous voulez contrôler manuellement, utilisez les événements MudNavGroup
+    private bool _gestionExpanded = true; 
+    private bool _configExpanded = true;  
 }

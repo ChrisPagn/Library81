@@ -36,11 +36,11 @@
 </MudLayout>
 
 @code {
-    private bool _drawerOpen = false;
+    private bool _drawerOpen = true;
 
     private void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;
-        StateHasChanged(); // Force la mise à jour de l'UI
+        StateHasChanged(); 
     }
 }

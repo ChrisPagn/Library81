@@ -1,5 +1,6 @@
-﻿@* Library81/Components/Layout/MainLayout.razor - Optimisé *@
+﻿@* Library81/Components/Layout/MainLayout.razor - Optimisé et corrigé *@
 @inherits LayoutComponentBase
+@rendermode InteractiveAuto
 
 <MudThemeProvider />
 <MudPopoverProvider />
@@ -40,5 +41,6 @@
     private void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;
+        StateHasChanged(); // Force la mise à jour de l'UI
     }
 }

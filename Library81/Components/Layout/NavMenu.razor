@@ -1,12 +1,13 @@
-﻿@* Library81/Components/Layout/NavMenu.razor - Version optimisée *@
+﻿@* Library81/Components/Layout/NavMenu.razor - Version corrigée *@
+@rendermode InteractiveAuto
+
 <MudNavMenu>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Accueil</MudNavLink>
 
     <MudNavGroup Title="Gestion"
                  Expanded="@_gestionExpanded"
                  Icon="@Icons.Material.Filled.Settings"
-                 ExpandIcon="@Icons.Material.Filled.ExpandMore"
-                 OnClick="ToggleGestion">
+                 ExpandIcon="@Icons.Material.Filled.ExpandMore">
         <MudNavLink Href="/books" Icon="@Icons.Material.Filled.Book">Livres</MudNavLink>
         <MudNavLink Href="/games" Icon="@Icons.Material.Filled.SportsEsports">Jeux</MudNavLink>
         <MudNavLink Href="/movies" Icon="@Icons.Material.Filled.Movie">Films</MudNavLink>
@@ -15,8 +16,7 @@
     <MudNavGroup Title="Configuration"
                  Expanded="@_configExpanded"
                  Icon="@Icons.Material.Filled.Build"
-                 ExpandIcon="@Icons.Material.Filled.ExpandMore"
-                 OnClick="ToggleConfig">
+                 ExpandIcon="@Icons.Material.Filled.ExpandMore">
         <MudNavLink Href="/categories" Icon="@Icons.Material.Filled.Category">Catégories</MudNavLink>
         <MudNavLink Href="/subcategories" Icon="@Icons.Material.Filled.Folder">Sous-catégories</MudNavLink>
         <MudNavLink Href="/genres" Icon="@Icons.Material.Filled.Style">Genres</MudNavLink>
@@ -33,12 +33,6 @@
     private bool _gestionExpanded = false;
     private bool _configExpanded = false;
 
-    private void ToggleGestion()
-    {
-        _gestionExpanded = !_gestionExpanded;
-    }
-    private void ToggleConfig()
-    {
-        _configExpanded = !_configExpanded;
-    }
+    // Ces méthodes ne sont plus nécessaires car MudNavGroup gère l'expansion automatiquement
+    // Si vous voulez contrôler manuellement, utilisez les événements MudNavGroup
 }
